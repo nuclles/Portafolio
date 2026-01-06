@@ -1,0 +1,70 @@
+#3 Defina una función que realice el siguiente cálculo, para el parámetro n: F(n) = n * (n - 1) / 2.
+
+defmodule Tpej1 do
+    def calcular_f(n) do
+
+  n * (n - 1) / 2
+    end
+end
+datos = 5
+IO.puts (Tpej1.calcular_f(datos))
+
+
+#25 Realice una función que sume dos números binarios, expresados a través de dos listas de {0,1}.
+
+defmodule Tpej2 do
+  def sumar_binarios(lista1, lista2) do
+    sumar_recursivo(lista1, lista2, 0, [])
+  end
+
+  defp sumar_recursivo([], [], 0, resultado), do: resultado
+  defp sumar_recursivo([], [], 1, resultado), do: [1 | resultado]
+  
+  defp sumar_recursivo([bit1 | resto1], [bit2 | resto2], carry, resultado) do
+    sumar_recursivo(resto1, resto2, div(bit1 + bit2 + carry, 2), [rem(bit1 + bit2 + carry, 2) | resultado])
+  end
+  
+  defp sumar_recursivo([], [bit2 | resto2], carry, resultado) do
+    sumar_recursivo([], resto2, div(bit2 + carry, 2), [rem(bit2 + carry, 2) | resultado])
+  end
+  
+  defp sumar_recursivo([bit1 | resto1], [], carry, resultado) do
+    sumar_recursivo(resto1, [], div(bit1 + carry, 2), [rem(bit1 + carry, 2) | resultado])
+  end
+end
+
+# EJEMPLO
+# Decimal 5: [1, 0, 1] (LSB = 1)
+# Decimal 3: [1, 1, 0] (LSB = 1)
+# Suma: Decimal 8 = [0, 0, 0, 1]
+lista_a = [1, 0, 1]
+lista_b = [1, 1, 0]
+
+IO.puts "Suma de #{inspect(lista_a)} y #{inspect(lista_b)}:"
+IO.puts inspect(Tpej2.sumar_binarios(lista_a, lista_b))
+
+#42 Defina una función llamada “Map” o “Collect” que devuelva la lista de los
+#resultados de aplicar una función que se pasa como parámetro a cada elemento de la lista de entrada.
+
+defmodule Tpej3 do
+  # Lista no vacia
+  def map([head | tail], fun) do
+    [fun.(head) | map(tail, fun)]
+  end
+
+  # lista vacia
+  def map([], _fun) do
+    []
+  end
+end
+
+#EJEMPLO
+
+numeros = [1, 2, 3, 4]
+
+duplicar = fn x -> x * 2 end
+
+resultado = Tpej3.map(numeros, duplicar)
+
+IO.puts "Lista original: #{inspect(numeros)}"
+IO.puts "Resultado de Map: #{inspect(resultado)}"
