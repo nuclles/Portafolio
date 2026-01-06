@@ -1,0 +1,155 @@
+/*===============================================================
+= 1. ESQUEMA (dbo suele existir; se incluye por requerimiento) =
+===============================================================*/
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'dbo')
+    EXEC('CREATE SCHEMA dbo');
+GO
+
+/*========================================
+= 2. CATÁLOGOS / DIMENSIONES (con UKs)  =
+========================================*/
+
+-- País
+CREATE TABLE dbo.Pais (
+    PaisId      INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre      NVARCHAR(100) NOT NULL,
+    CONSTRAINT UQ_Pais_Nombre UNIQUE (Nombre)
+);
+
+-- Ciudad (única por país + nombre)
+CREATE TABLE dbo.Ciudad (
+    CiudadId    INT IDENTITY(1,1) PRIMARY KEY,
+    PaisId      INT NOT NULL,
+    Nombre      NVARCHAR(120) NOT NULL,
+    CONSTRAINT UQ_Ciudad_Pais_Nombre UNIQUE (PaisId, Nombre),
+    CONSTRAINT FK_Ciudad_Pais FOREIGN KEY (PaisId) REFERENCES dbo.Pais(PaisId)
+);
+
+-- Conferencia
+CREATE TABLE dbo.Conferencia (
+    ConferenciaId INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre        NVARCHAR(80) NOT NULL,
+    CONSTRAINT UQ_Conferencia_Nombre UNIQUE (Nombre)
+);
+
+-- División (pertenece a una conferencia)
+CREATE TABLE dbo.Division (
+    DivisionId    INT IDENTITY(1,1) PRIMARY KEY,
+    ConferenciaId INT NOT NULL,
+    Nombre        NVARCHAR(80) NOT NULL,
+    CONSTRAINT UQ_Division_Conf_Nombre UNIQUE (ConferenciaId, Nombre),
+    CONSTRAINT FK_Division_Conferencia FOREIGN KEY (ConferenciaId) REFERENCES dbo.Conferencia(ConferenciaId)
+);
+
+-- Equipo
+CREATE TABLE dbo.Equipo (
+    EquipoId     INT IDENTITY(1,1) PRIMARY KEY,
+    TeamIdSrc    BIGINT NULL,                 -- teamid / OPid de origen (natural externo)
+    Codigo       NVARCHAR(50) NULL,           -- teamCode / OPcode
+    Sigla        NVARCHAR(10) NULL,           -- sigla / OPsigla
+    Nombre       NVARCHAR(120) NOT NULL,      -- name / OPname
+    CiudadId     INT NULL,
+    DivisionId   INT NULL,
+    ConferenciaId INT NULL,                   -- redundante pero útil para consultas directas
+    CONSTRAINT UQ_Equipo_Nombre UNIQUE (Nombre),
+    CONSTRAINT FK_Equipo_Ciudad FOREIGN KEY (CiudadId) REFERENCES dbo.Ciudad(CiudadId),
+    CONSTRAINT FK_Equipo_Division FOREIGN KEY (DivisionId) REFERENCES dbo.Division(DivisionId),
+    CONSTRAINT FK_Equipo_Conferencia FOREIGN KEY (ConferenciaId) REFERENCES dbo.Conferencia(ConferenciaId)
+);
+
+-- Jugador
+CREATE TABLE dbo.Jugador (
+    JugadorId     INT IDENTITY(1,1) PRIMARY KEY,
+    PlayerIdSrc   BIGINT NULL,                -- playerId externo
+    Nombre        NVARCHAR(100) NULL,         -- firstName
+    Apellido      NVARCHAR(100) NULL,         -- lastName
+    NombreMostrar NVARCHAR(200) NULL,         -- NamePlayer / name
+    AlturaTxt     NVARCHAR(20) NULL,          -- height (texto)
+    PesoTxt       NVARCHAR(20) NULL,          -- weight (texto)
+    Posicion      NVARCHAR(10) NULL,          -- position
+    DraftYear     INT NULL,                   -- draftYear
+    PaisId        INT NULL,                   -- country -> Pais
+    CiudadId      INT NULL,                   -- city -> Ciudad
+    CONSTRAINT UQ_Jugador_PlayerIdSrc UNIQUE (PlayerIdSrc),
+    CONSTRAINT FK_Jugador_Pais FOREIGN KEY (PaisId) REFERENCES dbo.Pais(PaisId),
+    CONSTRAINT FK_Jugador_Ciudad FOREIGN KEY (CiudadId) REFERENCES dbo.Ciudad(CiudadId)
+);
+
+-- Temporada
+CREATE TABLE dbo.Temporada (
+    TemporadaId  INT IDENTITY(1,1) PRIMARY KEY,
+    SeasonIdSrc  INT NULL,                 -- seasonId origen
+    YearDisplay  NVARCHAR(20) NULL,        -- yearDisplay
+    CONSTRAINT UQ_Temporada_Season UNIQUE (SeasonIdSrc)
+);
+
+-- Tipo de Estadística
+CREATE TABLE dbo.TipoEstadistica (
+    TipoEstadisticaId INT IDENTITY(1,1) PRIMARY KEY,
+    Codigo            NVARCHAR(40) NOT NULL,   -- p.ej. 'PTS','AST','REB','FGA','FGM','FG%','FTA','FTM','FT%','TPA','TPM','TP%'
+    Nombre            NVARCHAR(120) NOT NULL,
+    CONSTRAINT UQ_TipoEstadistica_Codigo UNIQUE (Codigo),
+    CONSTRAINT UQ_TipoEstadistica_Nombre UNIQUE (Nombre)
+);
+
+/*=========================
+= 3. TRANSACCIONALES     =
+=========================*/
+
+-- Partido (referencia temporada y equipos local/visitante)
+CREATE TABLE dbo.Partido (
+    PartidoId        INT IDENTITY(1,1) PRIMARY KEY,
+    GameIdSrc        BIGINT NOT NULL,     -- gameId origen
+    TemporadaId      INT NULL,
+    Fecha            DATE NOT NULL,
+    EquipoLocalId    INT NOT NULL,
+    EquipoVisitanteId INT NOT NULL,
+    PuntosLocal      INT NULL,
+    PuntosVisitante  INT NULL,
+    CONSTRAINT UQ_Partido_Game UNIQUE (GameIdSrc),
+    CONSTRAINT FK_Partido_Temporada FOREIGN KEY (TemporadaId) REFERENCES dbo.Temporada(TemporadaId),
+    CONSTRAINT FK_Partido_EquipoLocal FOREIGN KEY (EquipoLocalId) REFERENCES dbo.Equipo(EquipoId),
+    CONSTRAINT FK_Partido_EquipoVisit FOREIGN KEY (EquipoVisitanteId) REFERENCES dbo.Equipo(EquipoId)
+);
+
+-- Relación N–N Jugador–Equipo–Temporada (pertenencia)
+CREATE TABLE dbo.JugadorEquipoTemporada (
+    JugadorId    INT NOT NULL,
+    EquipoId     INT NOT NULL,
+    TemporadaId  INT NOT NULL,
+    NumeroCamiseta INT NULL,          -- jerseyNo si aplica como dorsal "nominal" de la temporada
+    PRIMARY KEY (JugadorId, EquipoId, TemporadaId),
+    CONSTRAINT FK_JET_Jugador FOREIGN KEY (JugadorId) REFERENCES dbo.Jugador(JugadorId),
+    CONSTRAINT FK_JET_Equipo FOREIGN KEY (EquipoId) REFERENCES dbo.Equipo(EquipoId),
+    CONSTRAINT FK_JET_Temporada FOREIGN KEY (TemporadaId) REFERENCES dbo.Temporada(TemporadaId)
+);
+
+-- Relación N–N Jugador–Partido (“Juegan/Participa”)
+CREATE TABLE dbo.ParticipacionJugadorPartido (
+    ParticipacionId  INT IDENTITY(1,1) PRIMARY KEY,
+    PartidoId        INT NOT NULL,
+    JugadorId        INT NOT NULL,
+    EquipoId         INT NOT NULL,    -- equipo con el que jugó ese partido (local o visitante)
+    EsLocal          BIT NULL,        -- isHome
+    NumeroCamiseta   INT NULL,        -- jerseyNo (en el partido)
+    Minutos          DECIMAL(10,2) NULL, -- stat_mins_valor
+    Segundos         DECIMAL(10,2) NULL, -- stat_secs_valor
+    Resultado        NVARCHAR(10) NULL,   -- winOrLoss
+    CONSTRAINT UQ_Participacion UNIQUE (PartidoId, JugadorId),
+    CONSTRAINT FK_PartPartido FOREIGN KEY (PartidoId) REFERENCES dbo.Partido(PartidoId),
+    CONSTRAINT FK_PartJugador FOREIGN KEY (JugadorId) REFERENCES dbo.Jugador(JugadorId),
+    CONSTRAINT FK_PartEquipo FOREIGN KEY (EquipoId) REFERENCES dbo.Equipo(EquipoId)
+);
+
+-- Hechos de estadísticas por tipo (Jugador x Partido x Tipo)
+CREATE TABLE dbo.Stats (
+    StatsId           BIGINT IDENTITY(1,1) PRIMARY KEY,
+    PartidoId         INT NOT NULL,
+    JugadorId         INT NOT NULL,
+    TipoEstadisticaId INT NOT NULL,
+    Valor             DECIMAL(10,2) NULL,
+    CONSTRAINT UQ_Stats UNIQUE (PartidoId, JugadorId, TipoEstadisticaId),
+    CONSTRAINT FK_Stats_Partido FOREIGN KEY (PartidoId) REFERENCES dbo.Partido(PartidoId),
+    CONSTRAINT FK_Stats_Jugador FOREIGN KEY (JugadorId) REFERENCES dbo.Jugador(JugadorId),
+    CONSTRAINT FK_Stats_Tipo FOREIGN KEY (TipoEstadisticaId) REFERENCES dbo.TipoEstadistica(TipoEstadisticaId)
+);

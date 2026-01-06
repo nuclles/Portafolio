@@ -1,0 +1,582 @@
+//******************************************//****************************************//
+//LEER BINARIO 
+
+void leerArcBinario(const char*direccion){
+        ifstream ArchDatos(direccion,ios::binary);
+        if(ArchDatos.fail()){
+            exit -1;
+        }
+        DatosEmpleado aux;
+        while(!ArchDatos.eof()){
+            ArchDatos.read(reinterpret_cast <char*>(&aux),sizeof(DatosEmpleado));
+            empleados.push_back(new empleado(aux));
+        }
+
+        ArchDatos.close();
+    }
+//******************************************//*****************************************//
+
+//LEER BINARIO
+ void cargar_productos(const char* diereccionLectura,const char*direccionGuardado){
+        ifstream archivoLectura(diereccionLectura,ios::binary);
+        S_producto aux;
+        while (archivoLectura.read((char*)&aux,sizeof(S_producto))) {
+            if(archivoLectura.is_open()){
+
+                switch(aux.tipo){
+
+                case 'N': Productos.push_back(new ProductoN(aux));
+                    break;
+                case 'I': Productos.push_back(new ProductoI(aux));
+                    break;
+                case 'J': Productos.push_back(new ProductoJ(aux));
+                    break;
+                }
+            }
+        }archivoLectura.close();
+//*******************************************//******************************************//
+
+//ESCRIBIR BINARIO
+            ofstream archivoGuardado(direccionGuardado,ios::binary);
+        if(archivoGuardado.is_open()){
+                for(auto &prod:Productos){
+                prod->ActualizarPrecio();
+                S_producto aux = prod->GetProducto();
+                    archivoGuardado.write(reinterpret_cast <char*>(&aux),sizeof(S_producto));
+
+            }
+
+        }
+    }
+//************************************//**************************************//
+
+//ESCRIBIR TXT
+  void imprimirRecibo(int id){
+            auto it=find_if(empleados.begin(),empleados.end(),[id](empleado &a){
+                return a.get_id()==id;
+            });
+            it.calcularCostoDe_TodosLosEmpleados();
+            it.calcularAntiguedad();
+            it.MontoTotal()
+
+            ifstream ArcRecibo("Recibo.txt");
+            if(ArcRecibo.fail())exit -1;
+
+            ArcRecibo<<
+            "nombre"<<it.get_nombre()<<endl<<
+            "Sueldo Neto"<<in.get_SueldoNeto()<<endl<<
+            "Monto por empleados"<<it.getMontoEmpleadosACargo()<<endl<<
+            "Monto por antiguedad"<<it.getMontoAntiguedad()<<endl;
+
+            ArchDatos.close();
+        }
+//*************************************//************************************//
+
+//LEER TXT
+ void gestora:: leerArchivo(const char* DieraccionArchivo){
+        ofstream archivo(DieraccionArchivo);
+        string linea;
+        producto *productoActual=nullptr;
+        comentario *comentarioActual=nullptr;
+
+        if(archivo.is_open()){
+
+            while(getline(archivo,linea)){
+                linea.erase(0,linea.find_first_not_of("\t\r\n")); //no lee los espacios en blanco de cada renglon
+                if (linea.empty()) continue;
+
+                if(linea.substr(0,2)=="--"){// extraemos el subComentario
+                    size_t pos = linea.find(':');//busca la posicion del primer caracter ":" y la almacena en pos
+                    if(pos != std :: string:: npos && comentarioActual){ //cuando la funcion find no encuentra nada devuelve "npos"
+                        string texto = linea.substr(2,pos-2);
+                        int puntuacion = stoi(linea.substr(pos+1));
+                        subComentario c(texto,puntuacion);
+                        comentarioActual->agregarRespuesta(c);
+                    }
+                } else if(linea[0]=='-'){// extraemos el comentario
+                    size_t pos = linea.find(':');
+                    if(pos != std :: string :: npos && productoActual){
+                        string texto = linea.substr(1,pos-1);
+                        int puntuacion = stoi(linea.substr(pos+1));
+                        comentario c(texto,puntuacion);
+                        productoActual->agregarComentario(c);
+                        comentarioActual = &productoActual->VecComentarios().back();//referencia al elemento que acabo de agrgar para poder agregar subcomentarios mas adelante
+                    }
+                } else {
+                    producto p(linea);
+                    agrgarProducto(p);
+                    productoActual =&productos.back();//referencia al ultimo elemento del vector.
+                    comentarioActual=nullptr;
+                    }
+                }
+
+            }
+            archivo.close();
+        } 
+    }
+//**********************************************//******************************************************//
+
+ALGORITMOS STL
+//SORT
+   void gestora::comentariosMayorPuntaje(){
+        for(auto &prod:productos){
+            prod.calcularPuntaje();
+        }
+        sort(productos.begin(),productos.end(),[](producto &a,producto &b){return a.getPuntaje()>b.getPuntaje();});
+
+        for(int i=1;i<5;i++){
+            productos[i].getNombre();
+        }
+    }
+
+//*****************************************//**********************************************//
+//FIND
+     void imprimirRecibo(int id){
+            auto it=find_if(empleados.begin(),empleados.end(),[id](empleado &a){
+                return a.get_id()==id;
+            });
+            it.calcularCostoDe_TodosLosEmpleados();
+            it.calcularAntiguedad();
+            it.MontoTotal()
+
+            ifstream ArcRecibo("Recibo.txt");
+            if(ArcRecibo.fail())exit -1;
+
+            ArcRecibo<<
+            "nombre"<<it.get_nombre()<<endl<<
+            "Sueldo Neto"<<in.get_SueldoNeto()<<endl<<
+            "Monto por empleados"<<it.getMontoEmpleadosACargo()<<endl<<
+            "Monto por antiguedad"<<it.getMontoAntiguedad()<<endl;
+
+            ArchDatos.close();
+        }
+
+//*****************************************//**********************************************//
+//FOR_EACH
+       void calcularCostoDe_TodosLosEmpleados(){
+            double costoTotal=0;
+            for_each(auto &vec:empleados){
+                costoTotal+=vec.get_MontoTotal();
+            }
+            cout<<"el costo Total por todos los empleados es: "<<costoTotal;
+        }
+
+//*****************************************//**********************************************//
+//MAP (como contador)
+    void ProductosPorMarca(){
+        map<string,int>Prod;
+
+        for_each(Productos.begin(),Productos.end(),[&Prod](Producto &aux){
+            Prod[aux.getmarca()]++;
+        });
+//*****************************************//*********************************************//
+//MAP (como contador)
+
+  vector<string> palabras = {"manzana", "pera", "manzana", "banana", "pera", "manzana"};
+    map<string, int> contador;
+
+    for (auto& palabra : palabras) {
+        contador[palabra]++; // Incrementa el contador de esa palabra
+    }
+
+    for (auto& [palabra, cantidad] : contador) {
+        cout << palabra << ": " << cantidad << endl;
+    }
+
+
+//*****************************************//**********************************************//
+//MAP (como acumulador)
+  map<string, int> acumulador;
+
+    for (auto& [categoria, puntuacion] : productos) {
+        acumulador[categoria] += puntuacion; // Acumula la puntuación por categoría
+    }
+
+    for (auto& [categoria, total] : acumulador) {
+        cout << categoria << ": " << total << endl;
+    }
+
+    return 0;
+}
+
+
+//*****************************************//**********************************************//
+
+EJEMPLO DE MAPAS Y VECTORES JUNTOS
+vector<string> Sistema::PermisosEnVariosCargos()
+{
+    vector<string>permisosComunes;
+    if(cargos.empty()){// verificamos si tenemos cargos en nuestro vector de sistemas
+        return permisosComunes;
+    }
+
+    //Definimos un Mapa para contar en cuantos cargos aparece cada permiso
+    map<string,int>contadorPermisos;
+
+    //recorrer todos los cargo y contar los permisos
+    for(auto&cargo :cargos){
+        vector<Permisos>permisos = cargo.Get_permisos();
+        for(auto& permiso :permisos){
+            contadorPermisos[permiso.nombre]++;
+        }
+    }
+
+    //Recorremos el mapa y guardamos en el vector los permisos que estan en mas de un cargo
+    for(auto& par:contadorPermisos){
+        if(par.second>1){
+            permisosComunes.push_back(par.first);
+        }
+    }
+    return permisosComunes;
+}
+
+
+//*****************************************//**********************************************//
+TEMPLATE PARA GUARDA Y LEER UN VECTOR EN UN ARCHIVO BINARIO
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+
+// Estructura de ejemplo para Alumno
+struct Alumno {
+    char nombre[50];
+    char apellido[50];
+    int legajo;
+    // Nota: No usar std::string aquí para mantener la estructura trivialmente copiable
+};
+
+// Estructura para Notas
+struct Nota {
+    int legajo;
+    float calificacion;
+    char materia[50];
+};
+
+// Función para guardar un vector en archivo binario
+template <typename T>
+bool guardarVectorBinario(const std::string& nombreArchivo, const std::vector<T>& datos) {
+    static_assert(std::is_trivially_copyable<T>::value,
+                 "El tipo debe ser trivialmente copiable");
+
+    std::ofstream archivo(nombreArchivo, std::ios::binary);
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir " << nombreArchivo << std::endl;
+        return false;
+    }
+
+    // Primero guardamos el tamaño del vector
+    size_t tamaño = datos.size();
+    archivo.write(reinterpret_cast<const char*>(&tamaño), sizeof(tamaño));
+
+    // Luego guardamos los datos
+    archivo.write(reinterpret_cast<const char*>(datos.data()), tamaño * sizeof(T));
+
+    if (!archivo.good()) {
+        std::cerr << "Error al escribir " << nombreArchivo << std::endl;
+        archivo.close();
+        return false;
+    }
+
+    archivo.close();
+    return true;
+}
+
+// Función para leer un vector desde archivo binario
+template <typename T>
+bool leerVectorBinario(const std::string& nombreArchivo, std::vector<T>& datos) {
+    static_assert(std::is_trivially_copyable<T>::value,
+                 "El tipo debe ser trivialmente copiable");
+
+    std::ifstream archivo(nombreArchivo, std::ios::binary);
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir " << nombreArchivo << std::endl;
+        return false;
+    }
+
+    // Leemos el tamaño del vector
+    size_t tamaño;
+    archivo.read(reinterpret_cast<char*>(&tamaño), sizeof(tamaño));
+
+    // Redimensionamos el vector
+    datos.resize(tamaño);
+
+    // Leemos los datos
+    archivo.read(reinterpret_cast<char*>(datos.data()), tamaño * sizeof(T));
+
+    if (!archivo.good() && !archivo.eof()) {
+        std::cerr << "Error al leer " << nombreArchivo << std::endl;
+        archivo.close();
+        return false;
+    }
+
+    archivo.close();
+    return true;
+}
+
+
+//*****************************************//**********************************************//
+FUNCION TIPO TEMPLATE PARA GUARDAR CUALQUIER TIPO DE DATO EN UN ARCHIVO BINARIO
+ESCRITURA
+
+#include <iostream>
+#include <fstream>
+#include <type_traits>
+#include <string>
+
+template <typename T>
+bool guardarEstructuraBinario(const std::string& nombreArchivo, const T& estructura) {
+    // Verificar que el tipo T sea trivialmente copiable (seguro para escribir en binario)
+    static_assert(std::is_trivially_copyable<T>::value, 
+                 "El tipo debe ser trivialmente copiable para escritura binaria segura");
+
+    // Abrir el archivo en modo binario para escritura
+    std::ofstream archivo(nombreArchivo, std::ios::binary);
+    
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo: " << nombreArchivo << std::endl;
+        return false;
+    }
+
+    // Escribir la estructura al archivo
+    archivo.write(reinterpret_cast<const char*>(&estructura), sizeof(T));
+
+    // Verificar si la escritura fue exitosa
+    if (!archivo.good()) {
+        std::cerr << "Error al escribir en el archivo: " << nombreArchivo << std::endl;
+        archivo.close();
+        return false;
+    }
+
+    archivo.close();
+    return true;
+}
+
+
+
+LECTURA
+template <typename T>
+bool leerEstructuraBinario(const std::string& nombreArchivo, T& estructura) {
+    static_assert(std::is_trivially_copyable<T>::value,
+                 "El tipo debe ser trivialmente copiable para lectura binaria segura");
+
+    std::ifstream archivo(nombreArchivo, std::ios::binary);
+    
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo: " << nombreArchivo << std::endl;
+        return false;
+    }
+
+    archivo.read(reinterpret_cast<char*>(&estructura), sizeof(T));
+
+    if (!archivo.good() && !archivo.eof()) {
+        std::cerr << "Error al leer el archivo: " << nombreArchivo << std::endl;
+        archivo.close();
+        return false;
+    }
+
+    archivo.close();
+    return true;
+}
+
+
+
+//*****************************************//**********************************************//
+GUARDAR VECTOR ELEMENTO A ELEMENTO EN UN ARCHIVO BINARIO
+ESCRITURA
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <type_traits>
+
+// Función para guardar un vector elemento por elemento
+template <typename T>
+bool guardarVectorElementoABinario(const std::string& nombreArchivo, const std::vector<T>& datos) {
+    static_assert(std::is_trivially_copyable<T>::value,
+                 "El tipo debe ser trivialmente copiable para escritura binaria segura");
+
+    std::ofstream archivo(nombreArchivo, std::ios::binary);
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo: " << nombreArchivo << std::endl;
+        return false;
+    }
+
+    // Primero guardamos el tamaño del vector
+    size_t tamaño = datos.size();
+    archivo.write(reinterpret_cast<const char*>(&tamaño), sizeof(tamaño));
+
+    // Guardamos cada elemento individualmente
+    for (const auto& elemento : datos) {
+        archivo.write(reinterpret_cast<const char*>(&elemento), sizeof(T));
+        
+        // Verificamos después de cada escritura
+        if (!archivo.good()) {
+            std::cerr << "Error al escribir en el archivo: " << nombreArchivo << std::endl;
+            archivo.close();
+            return false;
+        }
+    }
+
+    archivo.close();
+    return true;
+}
+
+
+LECTURA
+// Función para leer elemento por elemento (versión alternativa)
+template <typename T>
+bool leerVectorElementoABinario(const std::string& nombreArchivo, std::vector<T>& datos) {
+    static_assert(std::is_trivially_copyable<T>::value,
+                 "El tipo debe ser trivialmente copiable para lectura binaria segura");
+
+    std::ifstream archivo(nombreArchivo, std::ios::binary);
+    if (!archivo.is_open()) {
+        std::cerr << "Error al abrir el archivo: " << nombreArchivo << std::endl;
+        return false;
+    }
+
+    // Leemos el tamaño del vector
+    size_t tamaño;
+    archivo.read(reinterpret_cast<char*>(&tamaño), sizeof(tamaño));
+
+    // Preparamos el vector
+    datos.clear();
+    datos.reserve(tamaño);
+
+    // Leemos elemento por elemento
+    for (size_t i = 0; i < tamaño; ++i) {
+        T elemento;
+        archivo.read(reinterpret_cast<char*>(&elemento), sizeof(T));
+        
+        if (!archivo.good() && !archivo.eof()) {
+            std::cerr << "Error al leer el archivo: " << nombreArchivo << std::endl;
+            archivo.close();
+            return false;
+        }
+        
+        datos.push_back(elemento);
+    }
+
+    archivo.close();
+    return true;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//**********************************************************//****************************************************//
+TEORIA
+/*
+
+¿Que ventajas tiene usar STL?
+1- Eficiencia: los contenedores y algoritmos están optimizados.
+2- Reutilización: evita reinventar estructuras (vectores,listas,mapas,etc)
+3- Algoritmos genéricos: funcionan con cualquier contenedor compatible
+
+¿Para que sirven los iteradores?
+Actúan como punteros inteligentes para recorrer contenedores sin depender de su implementación interna.
+Permiten utilizar algoritmos genéricos de STL como COPY o FOR_EACH sobre distintos contenedores.
+
+¿Por qué son necesarias las clases template en los lenguajes de tipado estático?
+Las clases template en lenguajes de tipado estático, como C++,
+son necesarias para proporcionar flexibilidad y reutilización de código sin sacrificar la seguridad del tipo de dato en tiempo de compilación.
+
+¿Por qué C++ utiliza punteros para implementar el polimorfismo?
+En C++, los punteros (o referencias) son necesarios para implementar el polimorfismo debido a cómo el lenguaje maneja la memoria y las funciones en tiempo de ejecución.
+
+1. Polimorfismo y enlace dinámico
+Polimorfismo: Es la capacidad de un objeto de comportarse de diferentes maneras según su tipo real en tiempo de ejecución.
+
+Enlace dinámico: Para que el polimorfismo funcione, el compilador debe decidir en tiempo de ejecución qué función llamar (por ejemplo,
+ la función de una clase base o la de una clase derivada).
+
+2. ¿Por qué punteros?
+Objetos estáticos: Si usas un objeto directamente (sin punteros), el compilador decide en tiempo de compilación qué función llamar,
+ basándose en el tipo declarado del objeto. Esto se llama enlace estático y no permite polimorfismo.
+
+STL (Standard Template Library):
+Es una biblioteca estándar de C++ que proporciona plantillas (templates) para estructuras de datos (como vectores,
+ listas, mapas) y algoritmos (como ordenación y búsqueda). Es una herramienta fundamental para la programación genérica.
+
+Polimorfismo:
+Es la capacidad de un objeto de tomar múltiples formas. En C++, se logra mediante funciones virtuales y herencia.
+ Permite que una función se comporte de manera diferente según el tipo del objeto que la invoca.
+
+Programación Genérica:
+Es un paradigma que permite escribir código independiente del tipo de datos.
+ En C++, se implementa mediante plantillas (templates),
+ que permiten crear funciones y clases que funcionan con cualquier tipo de dato.
+
+
+Herencia
+Definición: Mecanismo donde una clase (hija) hereda atributos y métodos de otra clase (padre).
+Cuándo usarla: Cuando existe una relación "es-un" (ej.: Perro es un Animal).
+
+Composición
+Definición: Una clase contiene objetos de otras clases como parte de su estructura.
+Cuándo usarla: Cuando existe una relación "tiene-un" (ej.: Auto tiene un Motor).
+
+Diferencia clave:
+Herencia: Jerarquía fija (reutiliza comportamiento padre).
+
+Composición: Flexibilidad (cambia componentes en tiempo de ejecución).
+
+Regla práctica:
+
+Prefiere composición sobre herencia para evitar acoplamiento rígido. Usa herencia solo si la relación es natural y estable.
+
+
+¿Por qué los Templates son importantes en un lenguaje de tipado estático?
+Los templates (plantillas) son fundamentales en lenguajes de tipado estático como C++ porque:
+
+Permiten código genérico sin perder seguridad de tipos:
+
+Ejemplo: Puedes crear una función max() que funcione con int, double, string, etc., manteniendo la verificación de tipos en tiempo de compilación.
+
+Evitan la duplicación de código:
+
+Sin templates, tendrías que escribir versiones separadas de funciones/estructuras para cada tipo.
+
+Proporcionan abstracción sin overhead en runtime:
+
+El código específico para cada tipo se genera en tiempo de compilación.
+
+Habilitan la metaprogramación:
+
+Permiten cálculos y decisiones en tiempo de compilación.
+
+Son la base de la STL (Standard Template Library):
+
+Contenedores como vector<T> y algoritmos como sort() usan templates.
+
+
+Técnicas de Reutilización de Código (con ejemplos en C++)
+Usa herencia cuando:
+Existe una relación "es-un" clara
+Necesitas polimorfismo en tiempo de ejecución
+
+Usa composición cuando:
+La relación es "tiene-un" o "usa-un"
+Quieres mayor flexibilidad y menor acoplamiento
+
+templates cuando:
+El comportamiento es idéntico para diferentes tipos
+Necesitas máximo rendimiento (resolución en tiempo de compilación)
+
+*/
+

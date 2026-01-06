@@ -1,0 +1,324 @@
+#ifndef CARGO_H
+#define CARGO_H
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include <permiso.h>
+
+using namespace std;
+
+struct Permisos{
+    char nombre[100];//nombre del permiso
+};
+
+class cargo
+{
+    char NCargo[100];
+    vector<Permisos>permisos;
+public:
+    cargo();
+    cargo(const char *nombreCargo);
+
+    const char* get_NombreCargo();
+    vector<Permisos> Get_permisos();
+    void add_Permiso(const Permisos &permiso);
+    bool tienePermiso(const char* permisoRequerido);
+    char* getpermis(int i);
+
+
+};
+
+#endif // CARGO_H
+#include "cargo.h"
+#include <cstring>
+
+cargo::cargo(){}
+cargo::cargo(const char *nombreCargo) {
+    strncpy(NCargo,nombreCargo,sizeof(NCargo)-1);
+    NCargo[sizeof(NCargo)-1]='\0';//Asegura la terminacion nula
+}
+
+const char *cargo::get_NombreCargo()
+{
+    return NCargo;
+}
+
+vector<Permisos> cargo::Get_permisos()
+{
+    return this->permisos;
+}
+
+void cargo::add_Permiso(const Permisos &permiso)
+{
+    permisos.push_back(permiso);
+}
+
+bool cargo::tienePermiso(const char *permisoRequerido)
+{
+    for(const auto&permiso: permisos){
+        if(strcmp(permiso.nombre,permisoRequerido)==0){
+            return true;
+        }
+    }
+    return false;
+}
+
+
+//------------------------------------------------------------------------------------//
+#ifndef USUARIO_H
+#define USUARIO_H
+#include <cstring>
+#include <iostream>
+#include "cargo.h"
+using namespace std;
+
+class usuario
+{
+private:
+    char nombre[200];
+    int codigo;
+    cargo *Cargo;
+public:
+    usuario();
+    usuario(const char *nombreUsuario,int codigoUsuario,class cargo* cargoUsuario);
+
+    bool tienePermiso(const char* permisoRequerido);
+
+    const char* getNombre();
+    int getCodigo();
+    class cargo *getCargo();
+
+
+
+};
+
+#endif // USUARIO_H
+
+#include "usuario.h"
+#include <cstring>
+
+usuario::usuario() {}
+
+usuario::usuario(const char *nombreUsuario, int codigoUsuario, const class cargo *cargoUsuario):codigo(codigoUsuario), Cargo(cargoUsuario)
+{
+    strncpy(nombre,nombreUsuario,sizeof(nombre)-1);
+    nombre[sizeof(nombre)-1]='\0';
+
+}
+
+bool usuario::tienePermiso(const char *permisoRequerido)
+{
+    return Cargo->tienePermiso(permisoRequerido);
+}
+
+const char *usuario::getNombre()
+{
+    return nombre;
+}
+
+int usuario::getCodigo()
+{
+    return codigo;
+
+}
+
+cargo *usuario::getCargo()
+{
+    return Cargo;
+
+}
+
+
+
+//------------------------------------------------------------------------------------//
+
+#ifndef SISTEMA_H
+#define SISTEMA_H
+#include <usuario.h>
+#include <fstream>
+#include <cargo.h>
+#include <algorithm>
+#include <vector>
+#include <map>
+
+class Sistema
+{
+private:
+    vector<usuario>Usuarios;
+    vector<cargo>cargos;
+public:
+    Sistema();
+    void addUsuario(const usuario &us);
+    void addCargos(const cargo &Carg);
+    void GuardarBinCargos(const vector<cargo*>&cargos, const char* nombreArchivo);
+    void GuardarBinUsuarios(const vector<usuario*>&usuarios, const char* nombreArchivo);
+    void verificarPermiso(int cod,char*permiso);
+
+    vector<cargo*>cargoConMasPermisos();
+    vector<string>PermisosEnVariosCargos();
+    vector<usuario*>usuariosConMasPermisos();
+
+};
+
+#endif // SISTEMA_H
+
+#include "sistema.h"
+
+
+Sistema::Sistema() {}
+
+void Sistema::addUsuario(const usuario &us)
+{
+Usuarios.push_back(us);
+}
+
+void Sistema::addCargos(const cargo &Carg)
+{
+    cargos.push_back(Carg);
+}
+
+void Sistema::GuardarBinCargos(const vector<cargo*>&cargos,const char* nombreArchivo)
+{
+    ofstream archivo(nombreArchivo,ios::binary);
+    if(archivo.fill()){
+        cout<<"error al abrir el archivo";
+        return;
+    }
+    for(const auto& cargo:cargos){
+
+        //Guardar el nombre del archivo
+        archivo.write(cargo->get_NombreCargo(),sizeof(cargo->get_NombreCargo()));
+
+
+        //Guardar la cantidad de permisos
+        size_t numPermisos = cargo->Get_permisos().size();
+        archivo.write(reinterpret_cast<const char*>(&numPermisos), sizeof(numPermisos));
+
+        //Guardar cada permiso
+        for(const auto&permiso:cargo->Get_permisos()){
+            archivo.write(permiso.nombre,sizeof(permiso.nombre));
+        }
+    }
+
+
+}
+
+void Sistema::GuardarBinUsuarios(const vector<usuario *> &usuarios, const char *nombreArchivo)
+{
+    ofstream archivo(nombreArchivo,ios::binary);
+    if(archivo.fail()){
+        cout<<"error al abrir archivo usuario";
+        return;
+    }
+
+    for(const auto& usuario : usuarios){
+
+        //Guardar el nombre del ususario
+        archivo.write(usuario->getNombre(),sizeof(usuario->getNombre()));
+
+        //Guardar el codigo del usuario
+        archivo.write(reinterpret_cast<const char*>(usuario->getCodigo()),sizeof(usuario->getCodigo()));
+
+        //Guardar el nombre del cargo del ususario
+        archivo.write(usuario->getCargo()->get_NombreCargo(),sizeof(usuario->getCargo()->get_NombreCargo()));
+
+    }
+}
+
+void Sistema::verificarPermiso(int cod, char *permiso)
+{
+    auto usuarioIt = find_if(Usuarios.begin(),Usuarios.end(),[&cod](usuario& usuario1){
+        return usuario1.getCodigo()==cod;
+    });
+
+    if(usuarioIt != Usuarios.end()){
+
+        if(usuarioIt->tienePermiso(permiso)){
+            cout<<"el usuario tiene el permiso:  "<< permiso << endl;
+        }else{
+            cout<<"el usuario NO tiene el permiso:  "<<permiso<< endl;
+        }
+    }else{
+        cout<<"Usuario con codigo:  "<< cod << "no encontrado"<< endl;
+    }
+
+}
+
+vector<cargo *> Sistema::cargoConMasPermisos()
+{
+    vector<cargo*>cargoConMaxPermisos;
+    if(cargos.empty()){ //verificamos si tenemos cargos en nuestro vector de sistemas
+        return cargoConMaxPermisos;
+    }
+
+    //Encontrar el numero maximo de permisos
+    size_t maxPermisos=0;
+    for(auto& cargo : cargos){
+        size_t numPermisos = cargo.Get_permisos().size();
+        if(numPermisos>maxPermisos){
+            maxPermisos=numPermisos;
+        }
+    }
+
+    //recorremos todos los cargos y guardamos en el vector los que tienen el numero maximo de permisos
+    for(auto&cargo :cargos){
+        if(cargo.Get_permisos().size()==maxPermisos){
+            cargoConMaxPermisos.push_back(&cargo);
+        }
+        }
+    return cargoConMaxPermisos;
+}
+
+vector<string> Sistema::PermisosEnVariosCargos()
+{
+    vector<string>permisosComunes;
+    if(cargos.empty()){// verificamos si tenemos cargos en nuestro vector de sistemas
+        return permisosComunes;
+    }
+
+    //Definimos un Mapa para contar en cuantos cargos aparece cada permiso
+    map<string,int>contadorPermisos;
+
+    //recorrer todos los cargo y contar los permisos
+    for(auto&cargo :cargos){
+        vector<Permisos>permisos = cargo.Get_permisos();
+        for(auto& permiso :permisos){
+            contadorPermisos[permiso.nombre]++;
+        }
+    }
+
+    //Recorremos el mapa y guardamos en el vector los permisos que estan en mas de un cargo
+    for(auto& par:contadorPermisos){
+        if(par.second>1){
+            permisosComunes.push_back(par.first);
+        }
+    }
+    return permisosComunes;
+}
+
+vector<usuario*> Sistema::usuariosConMasPermisos()
+{
+    vector<usuario*> usuariosMaxPermisos;
+    if(Usuarios.empty()){//verificamos que el vector de ususarios tenga datos
+        return usuariosMaxPermisos;
+    }
+
+    //Encontrar el numero maximo de permisos
+    size_t maxPermisos=0;
+    for(auto&cargo :cargos){
+        size_t numPermisos = cargo.Get_permisos().size();
+        if(numPermisos > maxPermisos){
+            maxPermisos =numPermisos;
+        }
+    }
+
+    //Recorrer todo los usuarios que tienen el numero maximo de permisos
+
+    for(auto& usuario :Usuarios){
+        if(usuario.getCargo()->Get_permisos().size() == maxPermisos){
+            usuariosMaxPermisos.push_back(&usuario);
+        }
+    }
+
+    return usuariosMaxPermisos;
+}
