@@ -1,0 +1,48 @@
+Lista de cambios realizados y novedades
+Cambio / Mejora	Descripción
+1. Cambio de modelo LLM	Se reemplazó Qwen/Qwen2.5-0.5B-Instruct por Qwen/Qwen2.5-7B-Instruct (modelo más potente, mejor comprensión del español y razonamiento técnico). Se deja como variable configurable LLM_MODEL_ID.
+2. Carga e inyección de metadatos	Se añadió la función parse_metadata_file() que lee metadata.txt y extrae planta, sector, código, revisión, etc. Luego load_documents_with_metadata() adjunta estos metadatos a cada documento cargado. Esto permite que las respuestas del LLM puedan hacer referencia al instructivo correcto (ej. IMAN-023).
+3. Mejora en la división de chunks	Se especificaron separadores (separators) en el RecursiveCharacterTextSplitter para respetar párrafos y frases, obteniendo chunks más coherentes.
+4. Prompt del sistema en español y específico	Se diseñó un system_message que instruye al LLM a actuar como asistente técnico de Longvie, usar solo el contexto y citar códigos de instructivos. Se bajó la temperatura a 0.2 para mayor precisión factual.
+5. Gestión de metadatos en la visualización	Al mostrar los fragmentos recuperados, ahora se imprime el código del instructivo y la revisión, facilitando la trazabilidad.
+6. Manejo de archivos con extensión variable	El parseo de metadatos normaliza nombres de archivo para que coincidan con los archivos reales (ej. .txt).
+7. Comentarios exhaustivos	Se documentó cada bloque del código, explicando su propósito y funcionamiento. Se añadió un docstring inicial con la descripción general del sistema.
+8. Variables de configuración centralizadas	Al inicio del script se definen constantes como PERSIST_DIRECTORY, LLM_MODEL_ID, CHUNK_SIZE, etc., facilitando futuros ajustes.
+9. Mejora en la supresión de logs	Se mantiene la supresión pero se organiza mejor. Se evita suprimir errores reales al redirigir stdout/stderr solo durante la carga de documentos.
+10. Consulta de ejemplo relevante	Se cambió la query hardcodeada a una pregunta relacionada con los instructivos proporcionados: "¿Cómo se inspecciona un cable de acero en un puente grúa?"
+11. Uso de torch.float16 y low_cpu_mem_usage	Para el modelo LLM, se agregaron parámetros que optimizan el uso de memoria en GPU y CPU, permitiendo cargar modelos de 7B en hardware modesto.
+Notas adicionales para la ejecución
+Requisitos de hardware: El modelo Qwen2.5-7B-Instruct requiere aproximadamente 14 GB de RAM/VRAM en FP16. Si tu equipo no dispone de suficiente memoria, cambia LLM_MODEL_ID a "Qwen/Qwen2.5-1.5B-Instruct" o "Qwen/Qwen2.5-3B-Instruct".
+
+Primera ejecución: La primera vez se descargarán los modelos de embeddings y LLM (varios GB). Asegúrate de tener conexión a Internet y espacio en disco.
+
+Base de datos vectorial: Se crea automáticamente en ./data_db. Si añades o modificas documentos, borra esa carpeta para reindexar.
+
+Archivos necesarios: Coloca los 5 instructivos .txt y el metadata.txt dentro de la carpeta data/.
+
+Cambios realizados respecto a la versión anterior
+Modelo LLM cambiado a 1.5B
+
+Se modificó LLM_MODEL_ID = "Qwen/Qwen2.5-1.5B-Instruct".
+
+Requisitos de hardware más accesibles (~3-4 GB de RAM/VRAM).
+
+Eliminación de soporte para PDF y CSV
+
+Se removieron las importaciones de PyPDFLoader y CSVLoader.
+
+Ahora solo se usa TextLoader de langchain_community.document_loaders.
+
+La función load_documents_with_metadata itera exclusivamente sobre glob.glob(os.path.join(data_dir, "*.txt")).
+
+Ajustes en comentarios y mensajes
+
+Se actualizaron los comentarios para reflejar que el sistema solo procesa archivos .txt.
+
+Se eliminó la referencia a páginas (page_number) porque los archivos TXT no tienen paginación.
+
+Limpieza de código
+
+Se quitó el condicional de extensiones y el bloque supported_extensions.
+
+Se simplificó el bucle de carga.
